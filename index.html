@@ -7,6 +7,11 @@
 
 <script src="/socket.io/socket.io.js"></script>
 
+<!-- Stylish font for CloudTalk header -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
 <style>
 /* ----------- GLOBAL RESET ----------- */
 * {
@@ -19,7 +24,7 @@ body {
   height: 100vh;
   background: radial-gradient(1200px 800px at 60% -10%, #4b3f84 0%, transparent 60%), #0b0e14;
   color: #e7eaf3;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
   display: flex;
   flex-direction: column;
 }
@@ -27,12 +32,15 @@ body {
 /* ---------- TITLE / HEADER ---------- */
 #title {
   text-align: center;
-  padding: 18px;
-  font-size: 24px;
+  padding: 18px 0;
+  font-size: 32px;
   font-weight: 600;
-  color: #cfcfff;
-  letter-spacing: 1px;
-  text-shadow: 0px 0px 15px rgba(140,120,255,0.35);
+  color: #d7d2ff;
+  letter-spacing: 2px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  text-shadow: 0 0 18px rgba(164,140,255,0.6);
 }
 
 /* ----------- LOGIN SCREEN ----------- */
@@ -50,6 +58,7 @@ body {
   gap: 14px;
 }
 
+/* Username input */
 #username {
   padding: 12px;
   border: none;
@@ -61,38 +70,40 @@ body {
 
 /* ----------- CHAT WINDOW ----------- */
 #messages {
+  list-style: none;
   flex: 1;
   overflow-y: auto;
-  padding: 14px;
+  padding: 16px;
   display: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Message bubble container */
 .msg {
-  margin-bottom: 10px;
+  max-width: 75%;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.09);
-  width: fit-content;
-  max-width: 70%;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 16px;
   animation: fade 0.25s ease;
 }
 
-/* Username color comes from JS */
+.msg.you {
+  align-self: flex-end;
+  background: rgba(136, 100, 255, 0.45);
+  color: white;
+}
+
+/* Username color from JS */
 .user {
   font-weight: 600;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 
-/* Message text */
-.text {
-  font-weight: 400;
-  opacity: 0.95;
-}
-
-/* Fade animation */
 @keyframes fade {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -105,7 +116,7 @@ body {
   gap: 10px;
   background: rgba(255,255,255,0.02);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid rgba(255,255,255,0.12);
 }
 
 #msg {
@@ -126,20 +137,16 @@ button {
   color: white;
   font-size: 16px;
 }
-
-
 </style>
 </head>
 
 <body>
-    <div id="title">CloudTalk</div>
 
+<div id="title">CloudTalk</div>
 
-<header>CloudTalk</header>
-
-<div id="login" style="padding: 20px; text-align:center;">
-  <input id="username" placeholder="Enter your name..." style="padding:8px; border-radius:6px; border:none; width:70%; background:#2a2a2a; color:white;">
-  <button onclick="join()" style="padding:8px 14px; margin-left:10px; background:#0a84ff; border:none; border-radius:6px; color:white;">Join</button>
+<div id="login">
+  <input id="username" placeholder="Enter your name...">
+  <button onclick="join()">Join</button>
 </div>
 
 <ul id="messages"></ul>
@@ -154,7 +161,6 @@ const socket = io();
 const messages = document.getElementById("messages");
 const msg = document.getElementById("msg");
 
-// Color palette for usernames
 const palette = [
   "#A78BFA", "#60A5FA", "#34D399", "#F472B6",
   "#F59E0B", "#F87171", "#22D3EE", "#C084FC"
@@ -170,7 +176,6 @@ function colorFromName(name){
 let user = "";
 let userColor = "";
 
-// JOIN CHAT
 function join() {
   const nameInput = document.getElementById("username");
   if(nameInput.value.trim() !== ""){
@@ -178,12 +183,11 @@ function join() {
       userColor = colorFromName(user);
 
       document.getElementById("login").style.display = "none";
-      document.getElementById("messages").style.display = "block";
+      document.getElementById("messages").style.display = "flex";
       document.getElementById("input-area").style.display = "flex";
   }
 }
 
-// SEND MESSAGE
 function send(){
   if(msg.value.trim() !== ""){
       socket.emit("chat message", {
@@ -195,26 +199,17 @@ function send(){
   }
 }
 
-// RECEIVE MESSAGE
 socket.on("chat message", (m) => {
   const li = document.createElement("li");
   li.className = "msg";
+  if (m.name === user) li.classList.add("you");
 
-  const u = document.createElement("span");
-  u.className = "user";
-  u.textContent = m.name + ": ";
-  u.style.color = m.color;
-
-  const t = document.createElement("span");
-  t.className = "text";
-  t.textContent = m.text;
-
-  li.append(u, t);
+  li.innerHTML = `<span class="user" style="color:${m.color}">${m.name}:</span> <span>${m.text}</span>`;
+  
   messages.appendChild(li);
   messages.scrollTop = messages.scrollHeight;
 });
 </script>
-
 
 </body>
 </html>
